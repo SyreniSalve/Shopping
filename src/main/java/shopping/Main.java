@@ -1,6 +1,7 @@
 package shopping;
 
 
+import shopping.db.entity.ProductEntity;
 import shopping.db.repository.ProductRepository;
 import shopping.exception.ShoppingException;
 
@@ -23,16 +24,25 @@ public class Main implements AutoCloseable {
         } catch (SQLException e) {
             throw new ShoppingException(e);
         }
-
         this.productRepository = new ProductRepository(connection);
     }
 
     public void run(){
-        productRepository.insertNewProduct();
-        productRepository.listProducts();
+        productRepository.create("bla");
+        System.out.println("________________________________");
+        ProductEntity entity = productRepository.getById(6);
+        entity.setName("new name");
+        productRepository.update(entity);
+        System.out.println("________________________________");
+        System.out.println(productRepository.delete(14));
+        productRepository.list().forEach(System.out::println);
+        System.out.println("________________________________");
+        System.out.println(productRepository.getById(8));
+        System.out.println(productRepository.findById(100));
+        System.out.println("________________________________");
     }
 
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args){
         new Main().run();
     }
 
@@ -51,7 +61,7 @@ public class Main implements AutoCloseable {
         try {
             connection.close();
         } catch (SQLException e) {
-            throw  new ShoppingException(e);
+            throw new ShoppingException(e);
         }
     }
 }
