@@ -1,7 +1,9 @@
 package shopping;
 
 
+import shopping.db.entity.OrderEntity;
 import shopping.db.entity.ProductEntity;
+import shopping.db.repository.OrderRepository;
 import shopping.db.repository.ProductRepository;
 import shopping.exception.ShoppingException;
 
@@ -16,6 +18,7 @@ public class Main implements AutoCloseable {
 
     private final Connection connection;
     private final ProductRepository productRepository;
+    private final OrderRepository orderRepository;
 
     public Main() {
         Properties databaseProperties = loadDatabaseProperties();
@@ -24,15 +27,19 @@ public class Main implements AutoCloseable {
         } catch (SQLException e) {
             throw new ShoppingException(e);
         }
+        this.orderRepository = new OrderRepository(connection);
         this.productRepository = new ProductRepository(connection);
     }
 
-    public void run(){
-        productRepository.create("bla");
+    public void runProducts(){
+        ProductEntity newEntity = new ProductEntity();
+        newEntity.setName("bla bla");
+        newEntity.setPrice(9.99);
+        productRepository.save(newEntity);
         System.out.println("________________________________");
         ProductEntity entity = productRepository.getById(6);
         entity.setName("new name");
-        productRepository.update(entity);
+        productRepository.save(entity);
         System.out.println("________________________________");
         System.out.println(productRepository.delete(14));
         productRepository.list().forEach(System.out::println);
@@ -42,8 +49,19 @@ public class Main implements AutoCloseable {
         System.out.println("________________________________");
     }
 
+    public void runOrders() {
+        System.out.println("==================================");
+        System.out.println("==================================");
+        OrderEntity entity = new OrderEntity();
+        orderRepository.save(entity);
+        orderRepository.list().forEach(System.out::println);
+    }
+
     public static void main(String[] args){
-        new Main().run();
+        try(Main m = new Main()){
+            m.runProducts();
+            m.runOrders();
+        }
     }
 
     private static Properties loadDatabaseProperties(){
