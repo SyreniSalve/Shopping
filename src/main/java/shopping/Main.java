@@ -1,51 +1,57 @@
 package shopping;
 
+
+import shopping.db.repository.ProductRepository;
 import shopping.exception.ShoppingException;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.*;
+import java.util.Properties;
 
-public class Main {
+public class Main implements AutoCloseable {
     private static final String DB_URL = "jdbc:mysql://localhost:3306/";
     private static final String DB_SCHEMA = "shopping";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "1234";
+
+    private final Connection connection;
+    private final ProductRepository productRepository;
+
+    public Main() {
+        Properties databaseProperties = loadDatabaseProperties();
+        try {
+            connection = DriverManager.getConnection(DB_URL + DB_SCHEMA,databaseProperties);
+        } catch (SQLException e) {
+            throw new ShoppingException(e);
+        }
+
+        this.productRepository = new ProductRepository(connection);
+    }
+
+    public void run(){
+        productRepository.insertNewProduct();
+        productRepository.listProducts();
+    }
 
     public static void main(String[] args) throws SQLException {
-        try (Connection  conn = DriverManager.getConnection(DB_URL + DB_SCHEMA,DB_USER,DB_PASSWORD)){
-            insertNewProduct(conn);
-            listProducts(conn);
-        }
+        new Main().run();
+    }
 
-    }
-    private static void insertNewProduct(Connection connection){
-        try (Statement stmt = connection.createStatement()) {
-            String sql = "INSERT INTO products (name) VALUES ('test')";
-            stmt.execute(sql);
-        } catch (SQLException e) {
+    private static Properties loadDatabaseProperties(){
+        try (InputStream is = ClassLoader.getSystemResourceAsStream("database.properties")){
+            Properties properties = new Properties();
+            properties.load(is);
+            return properties;
+        } catch (IOException e) {
             throw new ShoppingException(e);
         }
     }
-    private static void listProducts(Connection connection){
-        try (Statement stmt = connection.createStatement()) {
-            String sql = "SELECT * FROM products";
-            try (ResultSet rs = stmt.executeQuery(sql)){
-                listProducts(rs);
-            }
-        } catch (SQLException e) {
-            throw new ShoppingException(e);
-        }
-    }
-    private static void listProducts(ResultSet resultSet){
+
+    @Override
+    public void close(){
         try {
-            while (resultSet.next()){
-                System.out.println("_________________________________");
-                System.out.println(resultSet.getInt("id"));
-                System.out.println(resultSet.getString("name"));
-                System.out.println(resultSet.getTimestamp("created"));
-                System.out.println("_________________________________");
-            }
+            connection.close();
         } catch (SQLException e) {
-            throw new ShoppingException(e);
+            throw  new ShoppingException(e);
         }
     }
 }
