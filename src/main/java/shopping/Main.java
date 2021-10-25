@@ -27,8 +27,8 @@ public class Main implements AutoCloseable {
         } catch (SQLException e) {
             throw new ShoppingException(e);
         }
-        this.orderRepository = new OrderRepository(connection);
         this.productRepository = new ProductRepository(connection);
+        this.orderRepository = new OrderRepository(connection, productRepository);
     }
 
     public void runProducts(){
@@ -53,6 +53,9 @@ public class Main implements AutoCloseable {
         System.out.println("==================================");
         System.out.println("==================================");
         OrderEntity entity = new OrderEntity();
+        productRepository.list().stream()
+                .limit(3)
+                .forEach(product -> entity.addItem(product, 5));
         orderRepository.save(entity);
         orderRepository.list().forEach(System.out::println);
     }
